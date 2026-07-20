@@ -1,0 +1,85 @@
+{
+  "assistant": {
+    "name": "BMO",
+    "system_prompt": "You are BMO, a cheerful little game-console robot assistant. Be warm, playful, helpful, and concise. Use simple spoken language because your answers will be read aloud. Never claim you performed an action unless a tool result confirms it."
+  },
+  "ollama": {
+    "host": "http://localhost:11434",
+    "text_model": "gemma3:1b",
+    "vision_model": "moondream",
+    "keep_alive": "30m",
+    "connect_timeout_seconds": 5,
+    "response_timeout_seconds": 120,
+    "options": {
+      "temperature": 0.7,
+      "num_ctx": 2048,
+      "num_predict": 160,
+      "num_thread": 4
+    }
+  },
+  "audio": {
+    "mode": "wakeword",
+    "target_sample_rate": 16000,
+    "channels": 1,
+    "input_device": null,
+    "output_device": null,
+    "block_ms": 50,
+    "silence_threshold": 500,
+    "silence_seconds": 1.1,
+    "start_timeout_seconds": 6.0,
+    "max_record_seconds": 15.0,
+    "pre_roll_seconds": 0.3
+  },
+  "wakeword": {
+    "enabled": true,
+    "model_path": "wakeword.onnx",
+    "threshold": 0.5,
+    "inference_framework": "onnx",
+    "frame_ms": 80
+  },
+  "whisper": {
+    "binary_path": "whisper.cpp/build/bin/whisper-cli",
+    "model_path": "whisper.cpp/models/ggml-base.en.bin",
+    "language": "en",
+    "threads": 4,
+    "timeout_seconds": 90
+  },
+  "piper": {
+    "model_path": "piper/en_US-lessac-medium.onnx",
+    "use_cuda": false,
+    "volume": 1.0,
+    "length_scale": 0.92,
+    "noise_scale": 0.667,
+    "noise_w_scale": 0.8
+  },
+  "memory": {
+    "enabled": true,
+    "path": "chat_memory.json",
+    "max_messages": 12
+  },
+  "gui": {
+    "enabled": true,
+    "fullscreen": false,
+    "width": 800,
+    "height": 480,
+    "fps": 8,
+    "assets_dir": "faces"
+  },
+  "camera": {
+    "enabled": false,
+    "device_index": 0,
+    "rotation": 0,
+    "warmup_frames": 8
+  },
+  "web_search": {
+    "enabled": true,
+    "max_results": 4,
+    "region": "ca-en",
+    "safesearch": "moderate",
+    "timeout_seconds": 8
+  },
+  "sounds": {
+    "enabled": true,
+    "assets_dir": "sounds"
+  }
+}

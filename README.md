@@ -1,155 +1,237 @@
-# BMO Local AI Agent 🎮
+# Modular Local BMO Agent
 
-A fully functional BMO (from Adventure Time) AI agent that runs locally using Ollama and Python!
 
 ## Features
 
-- **Local AI**: Uses Ollama for privacy-friendly, offline AI conversations
-- **Voice Interaction**: Speech recognition and text-to-speech for natural conversations
-- **BMO Personality**: True-to-character responses with BMO's cute and innocent personality
-- **Lightweight**: Designed to run on Raspberry Pi 5 (or any Linux/Windows machine)
-- **Interactive**: Real-time conversations with conversation history
+- Ollama text model with streamed responses
+- Piper neural speech loaded once for reliable repeated audio
+- whisper.cpp offline speech recognition
+- OpenWakeWord custom wake-word support
+- Tkinter reactive face states with optional PNG animation folders
+- Local JSON conversation memory
+- Optional webcam + Ollama vision
+- Optional current-information web search
+- Text-only, push-to-talk, continuous, and wake-word modes
 
-## Hardware Requirements
+## Project layout
 
-- Raspberry Pi 5 (or any computer with Python 3.8+)
-- Microphone (USB or built-in)
-- Speaker/Headphones
-- Optional: 3D printed BMO case (for the full experience!)
-
-## Software Requirements
-
-- Python 3.8 or higher
-- Ollama (for running local AI models)
-
-## Installation
-
-### 1. Install Ollama
-
-**On Linux/Mac:**
-```bash
-curl -fsSL https://ollama.com/install.sh | sh
+```text
+bmo_modular_agent/
+├── bmo_main.py
+├── config.json
+├── requirements.txt
+├── ai/
+│   └── ollama_client.py
+├── audio/
+│   ├── audio_manager.py
+│   ├── whisper_stt.py
+│   ├── piper_tts.py
+│   └── wakeword.py
+├── ui/
+│   └── bmo_gui.py
+├── tools/
+│   ├── action_router.py
+│   ├── camera.py
+│   ├── web_search.py
+│   └── clock.py
+├── memory/
+│   └── conversation_memory.py
+├── faces/
+└── sounds/
 ```
 
-**On Windows:**
-Download from [ollama.com](https://ollama.com)
+## 1. Python setup
 
-### 2. Pull the AI Model
+Python 3.10 or newer is recommended.
 
-```bash
-ollama pull llama3.2:3b
-```
-*Note: Use the 3B model for Raspberry Pi, or llama3.2:7b for more powerful machines*
-
-### 3. Install Python Dependencies
+### Raspberry Pi / Debian
 
 ```bash
+sudo apt update
+sudo apt install -y \
+  python3-venv python3-tk libportaudio2 portaudio19-dev \
+  libsndfile1 ffmpeg git cmake build-essential
+
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-**On Raspberry Pi, you may need:**
-```bash
-sudo apt-get install portaudio19-dev python3-pyaudio
-pip install pyaudio
+### Windows
+
+Create and activate a virtual environment:
+
+```powershell
+py -m venv .venv
+.venv\Scripts\activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
 ```
 
-### 4. Start Ollama Server
+Tkinter normally ships with the standard Windows Python installer.
+
+## 2. Ollama
+
+Install Ollama, start it, and download the configured models:
 
 ```bash
+ollama pull gemma3:1b
+ollama pull moondream
 ollama serve
 ```
 
-## Usage
+The vision model is only required when camera support is enabled.
 
-### Voice Mode (Default)
+## 3. whisper.cpp
+
+Clone and build whisper.cpp inside the project directory:
+
+```bash
+git clone https://github.com/ggml-org/whisper.cpp
+cmake -S whisper.cpp -B whisper.cpp/build
+cmake --build whisper.cpp/build --config Release -j 4
+```
+
+Download an English model:
+
+```bash
+bash whisper.cpp/models/download-ggml-model.sh base.en
+```
+
+On Windows, the compiled executable may be under
+`whisper.cpp/build/bin/Release/whisper-cli.exe`. Update `binary_path` in
+`config.json` accordingly.
+
+## 4. Piper voice
+
+Download a voice into the `piper` directory:
+
+```bash
+mkdir -p piper
+python -m piper.download_voices --data-dir piper en_US-lessac-medium
+```
+
+Piper needs both:
+
+```text
+piper/en_US-lessac-medium.onnx
+piper/en_US-lessac-medium.onnx.json
+```
+
+## 5. Wake word
+
+Place your OpenWakeWord ONNX model at:
+
+```text
+wakeword.onnx
+```
+
+Until you have one, run without wake-word detection:
+
+```bash
+python bmo_main.py --no-wakeword
+```
+
+That uses push-to-talk: press Enter, then speak.
+
+## 6. Run
+
+Full voice and GUI mode:
+
 ```bash
 python bmo_main.py
 ```
 
-### Text-Only Mode
+Push-to-talk:
+
+```bash
+python bmo_main.py --no-wakeword
+```
+
+Text-only test:
+
 ```bash
 python bmo_main.py --text
 ```
 
-### Commands During Conversation
-- Say/type `exit` or `quit` - Shut down BMO
-- Say/type `reset` - Start a new conversation
-- Press `Enter` (in voice mode) - Switch to text input temporarily
+No GUI:
 
-## Testing Individual Components
-
-### Test AI Brain
 ```bash
-python bmo_ai.py
+python bmo_main.py --no-gui --no-wakeword
 ```
 
-### Test Voice Module
-```bash
-python voice_module.py
+## Face animations
+
+Add PNG sequences under:
+
+```text
+faces/idle/
+faces/listening/
+faces/thinking/
+faces/speaking/
+faces/error/
+faces/warmup/
 ```
 
-## Configuration
+Files are displayed alphabetically. When no images exist, the program draws a
+simple animated fallback face.
 
-Edit `config.py` to customize:
-- Ollama model selection
-- Voice speed and volume
-- BMO's personality prompt
-- Audio settings
+## Sound effects
 
-## Project Structure
+The folders are included for future effects:
 
+```text
+sounds/greeting_sounds/
+sounds/thinking_sounds/
+sounds/ack_sounds/
+sounds/error_sounds/
 ```
-testcase-bmo/
-├── bmo_main.py          # Main controller
-├── bmo_ai.py            # AI conversation logic with Ollama
-├── voice_module.py      # Speech recognition & text-to-speech
-├── config.py            # Configuration settings
-├── requirements.txt     # Python dependencies
-└── README.md           # This file
-```
+
+The included `AudioManager.play_random_sound()` method can be called before
+listening, during thinking, or on errors.
+
+## Useful configuration changes
+
+For Raspberry Pi speed:
+
+- Keep `gemma3:1b`
+- Use `ggml-tiny.en.bin` or `ggml-base.en.bin`
+- Set Ollama `num_ctx` to 2048
+- Keep answers short with `num_predict`
+- Use a medium or low Piper voice
+
+For a desktop computer, use a larger Ollama model and a larger Whisper model.
 
 ## Troubleshooting
 
-### "Could not connect to Ollama"
-- Make sure Ollama is running: `ollama serve`
-- Check the OLLAMA_HOST in config.py (default: http://localhost:11434)
+### It speaks only once
 
-### "Model not found"
-- Pull the model: `ollama pull llama3.2:3b`
+This version uses a single Piper model and a dedicated queue worker. Do not
+recreate `PiperTTS` for every response.
 
-### Microphone not working
-- Check microphone permissions
-- Test with: `python voice_module.py`
-- On Linux: `sudo apt-get install portaudio19-dev`
+### It listens to itself
 
-### Voice sounds weird
-- Adjust VOICE_RATE and VOICE_VOLUME in config.py
-- Try different voice indices in voice_module.py
+The main loop waits for the Piper queue to finish before reopening the
+microphone. Keep the speaker away from the microphone when tuning thresholds.
 
-### Running slow on Raspberry Pi
-- Use smaller model: `ollama pull llama3.2:1b`
-- Update OLLAMA_MODEL in config.py to "llama3.2:1b"
-- Consider overclocking your Pi
+### It is slow
 
-## Customization Ideas
+Check which stage is slow:
 
-1. **Add LED Eyes**: Integrate GPIO control for LED expressions
-2. **Physical Buttons**: Add buttons for quick responses
-3. **Screen Face**: Add a small display showing BMO's face
-4. **Custom Wake Word**: Implement "Hey BMO" activation
-5. **Adventure Mode**: Add game-like interactions
-6. **Friend Recognition**: Add face/voice recognition for different users
+1. Transcription: use `tiny.en`.
+2. Model generation: use a 1B model and smaller context.
+3. Speech generation: use a lower-quality Piper voice.
+4. First response only: Ollama warm-up is enabled automatically.
 
-## Credits
+### Wake word triggers constantly
 
-Inspired by the video "I made a real BMO local AI agent with a Raspberry Pi and Ollama" by brenpoly on YouTube.
+Raise `wakeword.threshold` from `0.5` to `0.6` or `0.7`.
 
-BMO character from Adventure Time © Cartoon Network
+### Speech starts too late or cuts off
 
-## License
+Tune:
 
-MIT License - Feel free to modify and share!
-
----
-
-**Remember**: BMO loves you! 💛🎮
+- `audio.silence_threshold`
+- `audio.silence_seconds`
+- `audio.pre_roll_seconds`
