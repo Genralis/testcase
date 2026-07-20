@@ -1,0 +1,6 @@
+ollama
+pyaudio
+SpeechRecognition
+pyttsx3
+requests
+python-dotenv
